@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="O Arquivo do Insondável — Terminal investigativo de Horror Cósmico. Bestiário, Oráculo e Ficha do Investigador para mesas de RPG Lovecraftiano." />
+    <meta name="author" content="Derek Pinheiro Coelho Batista" />
+    <title>O Arquivo do Insondável</title>
+
+    <!-- Tipografia de Grimório Moderno -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=IM+Fell+English+SC&family=Spline+Sans+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Estilo Nativo CSS3 Avançado -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- React via CDN (SPA sem build step) -->
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <!-- Babel para transpilar JSX no navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+</head>
+<body>
+    <!-- Camada de ruído estático (poeira cósmica / monitor corrompido) -->
+    <div class="cosmic-noise" aria-hidden="true"></div>
+    <!-- Camada de vinheta abissal -->
+    <div class="abyss-vignette" aria-hidden="true"></div>
+    <!-- Pulso das bordas (Paranoia) -->
+    <div class="edge-pulse" aria-hidden="true"></div>
+
+    <!-- Região ARIA viva para o Oráculo / leitores de tela -->
+    <div id="aria-live-oracle" class="sr-only" role="status" aria-live="assertive" aria-atomic="true"></div>
+    <div id="aria-live-polite" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Raiz da Aplicação React -->
+    <div id="root"></div>
+
+    <noscript>
+        <div style="padding:2rem;color:#9bd6a0;font-family:monospace;text-align:center;">
+            Este Arquivo requer JavaScript ativo. O Vazio permanece selado sem ele.
+        </div>
+    </noscript>
+
+    <!-- Camadas lógicas: dados, contexto, componentes, app -->
+    <script type="text/babel" data-presets="react" src="js/data.js"></script>
+    <script type="text/babel" data-presets="react" src="js/context.js"></script>
+    <script type="text/babel" data-presets="react" src="js/components.js"></script>
+    <script type="text/babel" data-presets="react" src="js/app.js"></script>
+</body>
+</html>
