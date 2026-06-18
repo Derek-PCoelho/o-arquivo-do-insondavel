@@ -12,7 +12,7 @@
     const [authAction, setAuthAction] = useState("");
     const [authRole, setAuthRole] = useState("");
     const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const [password, setPassword] = useState(""); 
     const [error, setError] = useState("");
 
     const handleActionSelect = (action) => {
