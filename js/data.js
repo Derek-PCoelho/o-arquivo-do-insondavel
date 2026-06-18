@@ -368,7 +368,7 @@
       brandSub: "Terminal Investigativo · Horror Cósmico",
       portalTitle: "O Arquivo do Insondável",
       portalSub:
-        " Antes que o Vazio te observe de volta, declara tua natureza. O token de tua escolha será gravado nas profundezas desta máquina e selará tuas permissões.",
+        " Antes que o Vazio lhe observe de volta, declare a sua natureza. O token que escolher será gravado nas profundezas e selará as suas permissões.",
       master: "Guardião dos Segredos",
       masterRole: "Mestre",
       player: "Investigador",
