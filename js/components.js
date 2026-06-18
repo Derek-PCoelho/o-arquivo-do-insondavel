@@ -5,10 +5,52 @@
   const announce = window.announce;
 
   function Portal() {
-    const { setProfile, lang, setLang, data } = useArchive();
+    const { lang, setLang, data, authLogin, authRegister } = useArchive();
     const t = data.I18N[lang];
 
-    const choose = (p) => setProfile(p);
+    const [step, setStep] = useState(1);
+    const [authAction, setAuthAction] = useState("");
+    const [authRole, setAuthRole] = useState("");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const handleActionSelect = (action) => {
+      setAuthAction(action);
+      setStep(2);
+      setError("");
+    };
+
+    const handleRoleSelect = (role) => {
+      setAuthRole(role);
+      setStep(3);
+      setError("");
+    };
+
+    const handleBack = () => {
+      if (step === 3) setStep(2);
+      else if (step === 2) setStep(1);
+      setError("");
+    };
+
+    const handleAuth = async (e) => {
+      if (e) e.preventDefault();
+      setError("");
+
+      if (!username.trim() || !password.trim()) {
+        return setError("Preencha as credenciais para prosseguir.");
+      }
+
+      try {
+        if (authAction === "login") {
+          await authLogin(username, password);
+        } else {
+          await authRegister(username, password, authRole);
+        }
+      } catch (err) {
+        setError(err.message);
+      }
+    };
 
     return (
       <main className="portal" id="portal-screen">
@@ -25,71 +67,202 @@
         <h1 className="portal-title ancient">{t.portalTitle}</h1>
         <p className="portal-sub">{t.portalSub}</p>
 
-        <section className="portal-choices" aria-label={t.portalTitle}>
-          <article
-            className="glass skewed choice-card master breathing"
-            role="button"
-            tabIndex={0}
-            onClick={() => choose("master")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                choose("master");
-              }
-            }}
-            aria-label={t.master}
-          >
-            <span className="role-icon" aria-hidden="true">
-              🜏
-            </span>
-            <h3>{t.master}</h3>
-            <span className="entity-name-orig">{t.masterRole}</span>
-            <ul>
-              {t.masterPerks.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
-            <button
-              className="nav-tab active"
-              style={{ marginTop: "1.4rem" }}
-              tabIndex={-1}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "880px",
+            margin: "2rem auto 0",
+            minHeight: "400px",
+          }}
+        >
+          {/* ETAPA 1: ESCOLHER A AÇÃO */}
+          {step === 1 && (
+            <div
+              style={{
+                display: "flex",
+                gap: "1.5rem",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                animation: "dropIn 0.4s ease forwards",
+              }}
             >
-              {t.enter} →
-            </button>
-          </article>
+              <button
+                className="oracle-invoke"
+                onClick={() => handleActionSelect("login")}
+                style={{ minWidth: "220px" }}
+              >
+                Entrar no Arquivo
+              </button>
+              <button
+                className="oracle-invoke"
+                onClick={() => handleActionSelect("register")}
+                style={{
+                  background: "var(--glass-bg)",
+                  color: "var(--text-clinical)",
+                  border: "1px solid var(--glass-border)",
+                  minWidth: "220px",
+                }}
+              >
+                Novo Cadastro
+              </button>
+            </div>
+          )}
 
-          <article
-            className="glass skewed-alt choice-card player breathing"
-            role="button"
-            tabIndex={0}
-            onClick={() => choose("player")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                choose("player");
-              }
-            }}
-            aria-label={t.player}
-          >
-            <span className="role-icon" aria-hidden="true">
-              👁
-            </span>
-            <h3>{t.player}</h3>
-            <span className="entity-name-orig">{t.playerRole}</span>
-            <ul>
-              {t.playerPerks.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
-            <button
-              className="nav-tab active"
-              style={{ marginTop: "1.4rem", background: "var(--biolum-green)" }}
-              tabIndex={-1}
+          {/* ETAPA 2: ESCOLHER A NATUREZA */}
+          {step === 2 && (
+            <div style={{ animation: "dropIn 0.4s ease forwards" }}>
+              <button
+                className="btn-ghost"
+                onClick={handleBack}
+                style={{ marginBottom: "1.5rem" }}
+              >
+                ← Voltar
+              </button>
+              <h2
+                className="ancient"
+                style={{ textAlign: "center", marginBottom: "2rem" }}
+              >
+                Declarar Natureza
+              </h2>
+              <section
+                className="portal-choices"
+                aria-label={t.portalTitle}
+                style={{ margin: "0 auto" }}
+              >
+                <article
+                  className="glass skewed choice-card master breathing"
+                  role="button"
+                  onClick={() => handleRoleSelect("master")}
+                >
+                  <span className="role-icon" aria-hidden="true">
+                    🜏
+                  </span>
+                  <h3>{t.master}</h3>
+                  <span className="entity-name-orig">{t.masterRole}</span>
+                </article>
+                <article
+                  className="glass skewed-alt choice-card player breathing"
+                  role="button"
+                  onClick={() => handleRoleSelect("player")}
+                >
+                  <span className="role-icon" aria-hidden="true">
+                    👁
+                  </span>
+                  <h3>{t.player}</h3>
+                  <span className="entity-name-orig">{t.playerRole}</span>
+                </article>
+              </section>
+            </div>
+          )}
+
+          {/* ETAPA 3: CREDENCIAIS */}
+          {step === 3 && (
+            <div
+              style={{
+                maxWidth: "400px",
+                margin: "0 auto",
+                animation: "dropIn 0.4s ease forwards",
+              }}
             >
-              {t.enter} →
-            </button>
-          </article>
-        </section>
+              <button
+                className="btn-ghost"
+                onClick={handleBack}
+                style={{ marginBottom: "1.5rem" }}
+              >
+                ← Voltar
+              </button>
+
+              <div
+                className="glass skewed"
+                style={{
+                  padding: "2.5rem 2rem",
+                  border: "1px solid var(--glass-border)",
+                  borderRadius: "8px",
+                  boxShadow: "var(--shadow-purple)",
+                }}
+              >
+                <h2
+                  className="ancient"
+                  style={{ textAlign: "center", marginBottom: "1.5rem" }}
+                >
+                  {authAction === "login" ? "Identificação" : "Novo Pacto"}
+                </h2>
+
+                <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+                  <span
+                    className={
+                      "profile-badge " +
+                      (authRole === "master" ? "master" : "player")
+                    }
+                  >
+                    {authRole === "master"
+                      ? "🜏 " + t.masterRole
+                      : "👁 " + t.playerRole}
+                  </span>
+                </div>
+
+                {/* Removido o 'required' dos inputs e adicionado 'noValidate' ao form para evitar o erro de regex/pattern do navegador */}
+                <form onSubmit={handleAuth} noValidate>
+                  <div
+                    className="field"
+                    style={{ marginBottom: "1.2rem", textAlign: "left" }}
+                  >
+                    <label>
+                      Nome do{" "}
+                      {authRole === "master" ? "Guardião" : "Investigador"}
+                    </label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      style={{ width: "100%", marginTop: "0.4rem" }}
+                    />
+                  </div>
+                  <div
+                    className="field"
+                    style={{ marginBottom: "1.5rem", textAlign: "left" }}
+                  >
+                    <label>Palavra-Chave (Senha)</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{ width: "100%", marginTop: "0.4rem" }}
+                    />
+                  </div>
+
+                  {error && (
+                    <p
+                      style={{
+                        color: "var(--anomaly-red)",
+                        fontSize: "0.85rem",
+                        textAlign: "center",
+                        marginBottom: "1.2rem",
+                        fontFamily: "var(--font-clinical)",
+                      }}
+                    >
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="oracle-invoke"
+                    style={{
+                      width: "100%",
+                      padding: "0.8rem",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {authAction === "login"
+                      ? "Atravessar o Limiar"
+                      : "Selar Permissões"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     );
   }
@@ -119,7 +292,8 @@
       setRoute,
       isMaster,
       isPlayer,
-      clearProfile,
+      logout,
+      currentUser,
       audioEnabled,
       setAudioEnabled,
     } = useArchive();
@@ -169,15 +343,15 @@
 
           {isMaster && <SanityMini />}
           <span className={"profile-badge " + (isMaster ? "master" : "player")}>
-            {isMaster ? "🜏 " + t.masterRole : "👁 " + t.playerRole}
+            {currentUser} ({isMaster ? "🜏" : "👁"})
           </span>
           <LangSelector />
           <button
             className="btn-ghost"
-            onClick={clearProfile}
+            onClick={logout}
             aria-label={t.changeProfile}
           >
-            {t.changeProfile}
+            Sair
           </button>
         </div>
       </header>
@@ -281,7 +455,6 @@
           </span>
         </div>
 
-        {/* Renderização Condicional do Sincronismo */}
         {isDecoding ? (
           <div className="loading-shell" aria-live="polite">
             [ DECIFRANDO O NECRONOMICON... ]
@@ -458,13 +631,11 @@
 
         {result ? (
           <div className="oracle-result" key={Date.now()}>
-            {/* Eixo A: Vetor Geográfico */}
             <article className="glass skewed oracle-card dropped">
               <span className="axis-label">{t.axisGeo}</span>
               <h3 className="axis-title">{result.geo[lang]}</h3>
             </article>
 
-            {/* Eixo B: Ameaça Direta */}
             <article className="glass skewed-alt oracle-card dropped">
               <span className="axis-label">{t.axisThreat}</span>
               <h3 className="axis-title">{result.threat.name[lang]}</h3>
@@ -498,7 +669,6 @@
               </div>
             </article>
 
-            {/* Eixo C: Condicionante de Insanidade */}
             <article className="glass skewed oracle-card dropped insanity">
               <span className="axis-label">{t.axisInsanity}</span>
               <h3 className="axis-title">{result.insanity[lang].t}</h3>
@@ -545,14 +715,16 @@
   }
 
   function InvestigatorSheet() {
-    const { t, isPlayer, lang, Store, STORAGE_KEYS, adjustSanity } =
-      useArchive();
-    const [sheet, setSheet] = useState(() => {
-      const stored = Store.read(STORAGE_KEYS.sheet, null);
-      return stored && typeof stored === "object"
-        ? { ...defaultSheet(), ...stored }
-        : defaultSheet();
-    });
+    const {
+      t,
+      isPlayer,
+      lang,
+      Store,
+      STORAGE_KEYS,
+      adjustSanity,
+      currentUser,
+    } = useArchive();
+    const [sheet, setSheet] = useState(null);
     const [saved, setSaved] = useState(false);
     const saveTimer = useRef(null);
     const [rollState, setRollState] = useState({
@@ -562,12 +734,26 @@
     });
 
     useEffect(() => {
-      Store.write(STORAGE_KEYS.sheet, sheet);
-      setSaved(true);
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => setSaved(false), 1400);
+      Store.read(STORAGE_KEYS.sheet, currentUser, defaultSheet()).then(
+        (data) => {
+          setSheet(
+            data && typeof data === "object"
+              ? { ...defaultSheet(), ...data }
+              : defaultSheet(),
+          );
+        },
+      );
+    }, [Store, STORAGE_KEYS.sheet, currentUser]);
+
+    useEffect(() => {
+      if (sheet) {
+        Store.write(STORAGE_KEYS.sheet, currentUser, sheet);
+        setSaved(true);
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => setSaved(false), 1400);
+      }
       return () => clearTimeout(saveTimer.current);
-    }, [sheet]);
+    }, [sheet, Store, STORAGE_KEYS.sheet, currentUser]);
 
     if (!isPlayer) {
       return (
@@ -583,6 +769,13 @@
         </section>
       );
     }
+
+    if (!sheet)
+      return (
+        <div className="loading-shell">
+          [ RECUPERANDO FICHA DE {currentUser}... ]
+        </div>
+      );
 
     const setField = (key, val) => setSheet((s) => ({ ...s, [key]: val }));
     const setAttr = (key, val) =>
@@ -624,7 +817,7 @@
           setRollState({ active: false, skill: skillKey, result: finalResult });
 
           if (finalResult >= 95) {
-            adjustSanity(-1); // Drena sanidade real
+            adjustSanity(-1);
             announce(`Falha Crítica: ${finalResult}. Sanidade drenada.`, true);
           } else if (finalResult <= 5) {
             announce(`Sucesso Crítico: ${finalResult}.`, true);
@@ -659,7 +852,6 @@
         </div>
 
         <div className="sheet-grid">
-          {/* Cabeçalho 12 colunas */}
           <div className="glass skewed sheet-header">
             <div className="field c6">
               <label htmlFor="f-id">{t.identity}</label>
@@ -696,7 +888,6 @@
             </div>
           </div>
 
-          {/* Atributos Clínicos — 4 col */}
           <div className="glass skewed-alt sheet-attrs">
             <h3 className="panel-title">{t.attributes}</h3>
             {Object.keys(attrLabels).map((k) => (
@@ -731,7 +922,6 @@
             ))}
           </div>
 
-          {/* Epicentro Sanidade & Vida — 4 col */}
           <div className="glass skewed sheet-vital">
             <h3 className="panel-title">{t.vitality}</h3>
             <div className="radials">
@@ -758,7 +948,6 @@
             </div>
           </div>
 
-          {/* Arsenal & Perícias — 4 col */}
           <div className="glass skewed-alt sheet-arsenal">
             <h3 className="panel-title">{t.arsenal}</h3>
             <div className="field c12">
@@ -809,7 +998,6 @@
                         {t.skillList[i]}
                       </label>
 
-                      {/* Motor de Dado */}
                       <button
                         className="btn-ghost"
                         style={{
@@ -822,7 +1010,6 @@
                         D100
                       </button>
 
-                      {/* Visor do Resultado */}
                       <span
                         className="mono"
                         style={{
@@ -866,9 +1053,9 @@
         oscRef.current = audioCtxRef.current.createOscillator();
         gainRef.current = audioCtxRef.current.createGain();
 
-        oscRef.current.type = "sine"; // Onda grave profunda
-        oscRef.current.frequency.value = 45; // Frequência inicial (Hz)
-        gainRef.current.gain.value = 0.05; // Volume inicial baixo
+        oscRef.current.type = "sine";
+        oscRef.current.frequency.value = 45;
+        gainRef.current.gain.value = 0.05;
 
         oscRef.current.connect(gainRef.current);
         gainRef.current.connect(audioCtxRef.current.destination);
@@ -883,20 +1070,18 @@
         let targetGain = 0.05;
 
         if (sanity < 25) {
-          targetFreq = 65; // Som mais estridente
-          targetGain = 0.15; // Volume mais alto
+          targetFreq = 65;
+          targetGain = 0.15;
         } else if (sanity < 50) {
           targetFreq = 55;
           targetGain = 0.1;
         }
 
-        // Transição suave para os novos valores
         oscRef.current.frequency.linearRampToValueAtTime(targetFreq, now + 1);
         gainRef.current.gain.linearRampToValueAtTime(targetGain, now + 1);
       }
     }, [audioEnabled, sanity]);
 
-    // Cleanup final
     useEffect(() => {
       return () => {
         if (audioCtxRef.current) audioCtxRef.current.close();

@@ -16,29 +16,65 @@
     sheet: "archive.sheet",
   };
 
+  const API_URL = "http://localhost:3030/api";
+
   const Store = {
-    read(key, fallback) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw === null) return fallback;
+    async read(key, user, fallback) {
+      if (!user) {
+        // Fallback para o local storage caso o usuário não esteja logado
         try {
-          return JSON.parse(raw);
+          const raw = localStorage.getItem(key);
+          if (raw === null) return fallback;
+          try {
+            return JSON.parse(raw);
+          } catch (e) {
+            return raw;
+          }
         } catch (e) {
-          return raw;
+          return fallback;
         }
+      }
+      try {
+        const res = await fetch(`${API_URL}/store/${user}_${key}`);
+        if (!res.ok) throw new Error("Network response was not ok");
+        const data = await res.json();
+        return data.value !== null ? data.value : fallback;
       } catch (e) {
+        console.error("Falha ao ler do Vazio", e);
         return fallback;
       }
     },
-    write(key, value) {
+    async write(key, user, value) {
+      if (!user) {
+        try {
+          const v = typeof value === "string" ? value : JSON.stringify(value);
+          localStorage.setItem(key, v);
+        } catch (e) {}
+        return;
+      }
       try {
-        const v = typeof value === "string" ? value : JSON.stringify(value);
-        localStorage.setItem(key, v);
-      } catch (e) {}
+        await fetch(`${API_URL}/store/${user}_${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value }),
+        });
+      } catch (e) {
+        console.error("Falha ao gravar no Vazio", e);
+      }
     },
-    remove(key) {
+    async remove(key, user) {
+      if (!user) {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {}
+        return;
+      }
       try {
-        localStorage.removeItem(key);
+        await fetch(`${API_URL}/store/${user}_${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: null }),
+        });
       } catch (e) {}
     },
   };
@@ -156,39 +192,106 @@
   }
 
   function ArchiveProvider(props) {
-    const [profile, setProfileState] = useState(() =>
-      Store.read(STORAGE_KEYS.profile, null),
+    const [currentUser, setCurrentUser] = useState(
+      () => localStorage.getItem("archive.session.user") || null,
     );
-    const [lang, setLangState] = useState(() =>
-      Store.read(STORAGE_KEYS.lang, "pt"),
+    const [profile, setProfileState] = useState(
+      () => localStorage.getItem("archive.session.role") || null,
     );
-    const [sanity, setSanityState] = useState(() => {
-      const v = Store.read(STORAGE_KEYS.sanity, 100);
-      return typeof v === "number" ? v : 100;
+
+    const [lang, setLangState] = useState(() => {
+      const stored = localStorage.getItem(STORAGE_KEYS.lang);
+      return stored ? stored : "pt";
     });
+
+    const [sanity, setSanityState] = useState(100);
     const [route, setRoute] = useState("bestiary");
+    const [isAppLoading, setIsAppLoading] = useState(true);
 
     const { audioEnabled, setAudioEnabled } = useAbyssAudio(sanity);
 
     useEffect(() => {
-      Store.write(STORAGE_KEYS.sanity, sanity);
-      applySanityToDOM(sanity);
-    }, [sanity]);
+      let isMounted = true;
+      async function fetchInitial() {
+        if (!currentUser) {
+          if (isMounted) setIsAppLoading(false);
+          return;
+        }
+        const s = await Store.read(STORAGE_KEYS.sanity, currentUser, 100);
+        if (isMounted) {
+          setSanityState(typeof s === "number" ? s : 100);
+          setIsAppLoading(false);
+        }
+      }
+      setIsAppLoading(true);
+      fetchInitial();
+      return () => {
+        isMounted = false;
+      };
+    }, [currentUser]);
 
     useEffect(() => {
-      Store.write(STORAGE_KEYS.lang, lang);
-    }, [lang]);
+      if (!isAppLoading && currentUser) {
+        Store.write(STORAGE_KEYS.sanity, currentUser, sanity);
+      }
+      applySanityToDOM(sanity);
+    }, [sanity, isAppLoading, currentUser]);
+
+    useEffect(() => {
+      if (!isAppLoading && currentUser) {
+        Store.write(STORAGE_KEYS.lang, currentUser, lang);
+      }
+      localStorage.setItem(STORAGE_KEYS.lang, lang);
+    }, [lang, isAppLoading, currentUser]);
+
+    const authLogin = async (username, password) => {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentUser(data.user.username);
+        setProfileState(data.user.role);
+        localStorage.setItem("archive.session.user", data.user.username);
+        localStorage.setItem("archive.session.role", data.user.role);
+        setRoute("bestiary");
+      } else throw new Error(data.error);
+    };
+
+    const authRegister = async (username, password, role) => {
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentUser(data.user.username);
+        setProfileState(data.user.role);
+        localStorage.setItem("archive.session.user", data.user.username);
+        localStorage.setItem("archive.session.role", data.user.role);
+        setRoute("bestiary");
+      } else throw new Error(data.error);
+    };
+
+    const logout = useCallback(() => {
+      setCurrentUser(null);
+      setProfileState(null);
+      localStorage.removeItem("archive.session.user");
+      localStorage.removeItem("archive.session.role");
+      setRoute("bestiary");
+    }, []);
 
     const setProfile = useCallback((p) => {
       setProfileState(p);
-      Store.write(STORAGE_KEYS.profile, p);
       setRoute("bestiary");
     }, []);
 
     const clearProfile = useCallback(() => {
-      setProfileState(null);
-      Store.remove(STORAGE_KEYS.profile);
-    }, []);
+      logout();
+    }, [logout]);
 
     const setLang = useCallback((l) => setLangState(l), []);
 
@@ -204,6 +307,10 @@
     const t = window.ARCHIVE_DATA.I18N[lang] || window.ARCHIVE_DATA.I18N.pt;
 
     const value = {
+      currentUser,
+      authLogin,
+      authRegister,
+      logout,
       profile,
       setProfile,
       clearProfile,
@@ -224,6 +331,14 @@
       audioEnabled,
       setAudioEnabled,
     };
+
+    if (isAppLoading && currentUser) {
+      return React.createElement(
+        "div",
+        { className: "loading-shell" },
+        "[ DECIFRANDO ARQUIVOS DA NUVEM... ]",
+      );
+    }
 
     return React.createElement(
       ArchiveContext.Provider,
